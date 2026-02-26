@@ -96,72 +96,57 @@ function addSectionRadarSegments(map, rows, boundsCollector) {
   let added = 0;
 
   for (const r of rows) {
-    const keyLonIni = findKey(r, ["Longitud inicio tramo", "Longitud Inicio Tramo", "Longitud inicio"]);
-    const keyLatIni = findKey(r, ["Latitud inicio tramo", "Latitud Inicio Tramo", "Latitud inicio"]);
-    const keyLonFin = findKey(r, ["Longitud fin tramo", "Longitud Fin Tramo", "Longitud fin"]);
-    const keyLatFin = findKey(r, ["Latitud fin tramo", "Latitud Fin Tramo", "Latitud fin"]);
 
-    // Si no hay columnas de tramo, saltamos
-    if (!keyLonIni || !keyLatIni) continue;
+    const keyLonIni = findKey(r, ["Longitud inicio tramo"]);
+    const keyLatIni = findKey(r, ["Latitud inicio tramo"]);
+    const keyLonFin = findKey(r, ["Longitud fin tramo"]);
+    const keyLatFin = findKey(r, ["Latitud fin tramo"]);
+
+    if (!keyLonIni || !keyLatIni || !keyLonFin || !keyLatFin) {
+      continue; // si no existen columnas, saltamos
+    }
 
     const lon1 = toNumber(r[keyLonIni]);
     const lat1 = toNumber(r[keyLatIni]);
-    if (!Number.isFinite(lon1) || !Number.isFinite(lat1)) continue;
+    const lon2 = toNumber(r[keyLonFin]);
+    const lat2 = toNumber(r[keyLatFin]);
 
-    // Si no hay fin, no se puede dibujar “ruta”: marcamos solo el inicio (opcional)
-    const hasEnd = keyLonFin && keyLatFin && Number.isFinite(toNumber(r[keyLonFin])) && Number.isFinite(toNumber(r[keyLatFin]));
-
-    const keyVel = findKey(r, ["Velocidad límite", "Velocidad limite", "Velocidad", "Velocidad límite (km/h)"]);
-    const keyUbic = findKey(r, ["Ubicacion", "Ubicación", "Carretera o vial", "Tramo", "PK", "Sentido", "Tipo"]);
-
-    const vel = keyVel ? r[keyVel] : null;
-    const ubic = keyUbic ? r[keyUbic] : null;
-
-    if (hasEnd) {
-      const lon2 = toNumber(r[keyLonFin]);
-      const lat2 = toNumber(r[keyLatFin]);
-
-      // Ruta en rojo
-      const poly = L.polyline(
-        [[lat1, lon1], [lat2, lon2]],
-        { color: "red", weight: 4, opacity: 0.85 }
-      ).addTo(map);
-
-      const popupHtml = `
-        <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
-          <div style="font-weight:700;margin-bottom:4px">Radar de tramo</div>
-          ${ubic ? `<div><strong>Ubicación:</strong> ${String(ubic)}</div>` : ""}
-          <div><strong>Velocidad límite:</strong> ${vel ?? "—"}</div>
-          <div style="margin-top:6px;color:#666;font-size:12px">
-            <strong>Inicio:</strong> ${lat1.toFixed(6)}, ${lon1.toFixed(6)}<br/>
-            <strong>Fin:</strong> ${lat2.toFixed(6)}, ${lon2.toFixed(6)}
-          </div>
-        </div>
-      `;
-
-      poly.bindPopup(popupHtml);
-
-      boundsCollector.push([lat1, lon1], [lat2, lon2]);
-      added++;
-    } else {
-      // Solo inicio (fallback)
-      const popupHtml = `
-        <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
-          <div style="font-weight:700;margin-bottom:4px">Radar de tramo (solo inicio)</div>
-          ${ubic ? `<div><strong>Ubicación:</strong> ${String(ubic)}</div>` : ""}
-          <div><strong>Velocidad límite:</strong> ${vel ?? "—"}</div>
-          <div style="margin-top:6px;color:#666;font-size:12px">
-            <strong>Inicio:</strong> ${lat1.toFixed(6)}, ${lon1.toFixed(6)}
-          </div>
-        </div>
-      `;
-      L.circleMarker([lat1, lon1], { radius: 6, color: "red", weight: 2, fillOpacity: 0.3 })
-        .addTo(map)
-        .bindPopup(popupHtml);
-
-      boundsCollector.push([lat1, lon1]);
-      added++;
+    if (
+      !Number.isFinite(lon1) || !Number.isFinite(lat1) ||
+      !Number.isFinite(lon2) || !Number.isFinite(lat2)
+    ) {
+      continue;
     }
+
+    const keyVel = findKey(r, ["Velocidad límite"]);
+    const vel = keyVel ? r[keyVel] : null;
+
+    // 🔴 Dibujar tramo en rojo
+    const polyline = L.polyline(
+      [
+        [lat1, lon1],
+        [lat2, lon2]
+      ],
+      {
+        color: "red",
+        weight: 5,
+        opacity: 0.9
+      }
+    ).addTo(map);
+
+    polyline.bindPopup(`
+      <div>
+        <strong>Radar de tramo</strong><br>
+        Velocidad límite: ${vel ?? "—"}<br>
+        Inicio: ${lat1.toFixed(6)}, ${lon1.toFixed(6)}<br>
+        Fin: ${lat2.toFixed(6)}, ${lon2.toFixed(6)}
+      </div>
+    `);
+
+    boundsCollector.push([lat1, lon1]);
+    boundsCollector.push([lat2, lon2]);
+
+    added++;
   }
 
   return added;
