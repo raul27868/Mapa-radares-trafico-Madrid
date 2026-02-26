@@ -4,3 +4,7 @@ Mapa estático para GitHub Pages que lee el XLSX de radares del Ayuntamiento de 
 
 ## Datos
 Proceden del Portal de Datos Abiertos del Ayuntamiento de Madrid (dataset de radares).
+https://datos.madrid.es/dataset/300049-0-radares-fijos-moviles
+
+
+ 
